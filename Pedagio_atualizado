@@ -1,0 +1,229 @@
+#include<stdlib.h>
+	#include<stdio.h>
+	#include<unistd.h>
+	#include<pthread.h>
+	#include<sys/ipc.h>
+	#include<semaphore.h>
+	#include<string.h>
+
+	#define Tamanho_Fila 5
+	#define Numero_Cabines 3
+	#define Tipos_Veiculos 7
+	#define N_Amb 1
+	#define N_Pol 2
+
+	sem_t sem_Veiculos; //representa os veiculos
+	sem_t sem_Fila; //representa a fila de veiculos
+	sem_t sem_Cabine[Numero_Cabines]; // representa as cabines do pedagio
+	sem_t sem_Cabine_check[Numero_Cabines]; // represta se carro passou ou nao
+	sem_t sem_Veiculos_Fila[Numero_Cabines]; //representa o num de carros na fila
+
+	sem_t sem_escreve, sem_ler;
+	int visor, amb=0, viat=0;
+
+	void* f_cabine(void * v){
+	int id = *(int*)v;
+
+		while(1) {
+			//srand( (unsigned)time(NULL) );
+			//id = rand() % 6;
+			sem_wait(&sem_escreve); // espera veiculo
+			visor = id; //mostra que está livre
+			sem_post(&sem_ler); //avisa que esta acordado
+			//printf("%d chegou\n",id);
+			sem_wait(&sem_Veiculos_Fila[id]); //espera veiculo passar
+			sleep(random()%3);
+			sem_post(&sem_Cabine_check[id]); //avisa que carro passou
+			sleep(random()%3);
+			//id = rand() % 6;
+		}
+
+	}
+	void *f_amb(void* v){
+		while(1){
+			int id = *(int*) v;
+			int minha_Fila= 1;
+			char tp[15];
+
+			strcpy(tp,"AMBULANCIA");
+			//printf("%s chegou na fila\n",tp);
+			printf("%s chegou na fila\n",tp);
+				sem_wait(&sem_ler); //espera cabine indicar que estar dormindo
+				minha_Fila = visor; //olha qual cabine esta dormindo
+				sem_post(&sem_escreve); //aisa que esta indo ser atendido
+				sem_wait(&sem_Cabine[minha_Fila]); //espera a cabine acordar
+				//printf("%s está na cabine %d \n",tp,minha_Fila );
+				sem_post(&sem_Veiculos_Fila[minha_Fila]); //avisa que veiculo esta na fila
+				sem_post(&sem_Fila); //deixa a fila
+				usleep(1000*id);
+				sem_wait(&sem_Cabine_check[minha_Fila]); //espera cabine abrir cancela
+				sem_post(&sem_Cabine[minha_Fila]); //deixa cabine
+				printf("%s foi atendido.\n",tp );
+				sleep(15);
+			
+			}
+
+	}
+
+	void *f_pol(void* v){
+		while(1){
+			int id = *(int*) v;
+			int minha_Fila, acum=0;
+			char tp[15];
+			
+			acum = acum +1;
+			strcpy(tp,"POLICIA");
+			//printf("%s chegou na fila\n",tp);
+			printf("%s chegou na fila\n",tp);
+				sem_wait(&sem_ler); //espera cabine indicar que estar dormindo
+				minha_Fila = visor; //olha qual cabine esta dormindo
+				sem_post(&sem_escreve); //aisa que esta indo ser atendido
+				sem_wait(&sem_Cabine[minha_Fila]); //espera a cabine acordar
+				//printf("%s está na cabine %d \n",tp,minha_Fila );
+				sem_post(&sem_Veiculos_Fila[minha_Fila]); //avisa que veiculo esta na fila
+				sem_post(&sem_Fila); //deixa a fila
+				usleep(1000*id);
+				sem_wait(&sem_Cabine_check[minha_Fila]); //espera cabine abrir cancela
+				sem_post(&sem_Cabine[minha_Fila]); //deixa cabine
+				printf("%s foi atendido.\n",tp );
+				sleep(20);
+				acum = 0;
+			}
+
+	}
+
+	void * f_veiculo(void* v) { //veiculos
+
+
+		while(1){
+			int id = *(int*) v;
+			int minha_Fila;
+			char tp[15];
+	
+			//srand( (unsigned)time(NULL) );
+			//id = rand() % 6;
+		sleep(random()%6);
+			//sleep(random()%3);
+			//printf("%d chegou\n",id);
+			usleep(random()%700+4);
+			//if (sem_trywait(&sem_Fila) == 0) {
+			//printf("%d chegou\n",id);
+			//if (id == 0){
+			//strcpy(tp,"AMBULANCIA");
+			//printf("%s chegou na fila\n",tp);
+			 //if (id == 1){
+			//strcpy(tp,"POLICIA");
+			//printf("%s chegou na fila\n",tp);
+			 if (id == 2){
+			strcpy(tp,"ONIBUS");
+			sleep(random ()%5);
+			//printf("%s chegou na fila\n",tp);
+			} else if (id == 3){
+			strcpy(tp,"CAMINHAO");
+			sleep(random ()%4);
+			//printf("%s chegou na fila\n",tp);
+			} else if (id == 4){
+			strcpy(tp,"CARRO");
+			sleep(random ()%3);
+			//printf("%s chegou na fila\n",tp);
+			} else if (id == 5){
+			strcpy(tp,"MOTO");
+			sleep(random ()%2);
+			//printf("%s chegou na fila\n",tp);
+	
+			}
+	
+			//printf("%s chegou na fila\n",tp);
+	
+			//for(i=0;i<=Tamanho_Fila;i++){
+			/*if(id<=1){
+	
+				printf("%s chegou na fila\n",tp);
+				sem_wait(&sem_ler); //espera cabine indicar que estar dormindo
+				minha_Fila = visor; //olha qual cabine esta dormindo
+				sem_post(&sem_escreve); //aisa que esta indo ser atendido
+				sem_wait(&sem_Cabine[minha_Fila]); //espera a cabine acordar
+				//printf("%s está na cabine %d \n",tp,minha_Fila );
+				sem_post(&sem_Veiculos_Fila[minha_Fila]); //avisa que veiculo esta na fila
+				sem_post(&sem_Fila); //deixa a fila
+				usleep(1000*id);
+				sem_wait(&sem_Cabine_check[minha_Fila]); //espera cabine abrir cancela
+				sem_post(&sem_Cabine[minha_Fila]); //deixa cabine
+				printf("%s foi atendido.\n",tp );
+	
+	
+			//}
+			}
+			else {*/
+				
+				printf("%s chegou na fila\n",tp);
+				sem_wait(&sem_ler); //espera cabine indicar que estar dormindo
+				minha_Fila = visor; //olha qual cabine esta dormindo
+				sem_post(&sem_escreve); //aisa que esta indo ser atendido
+				sem_wait(&sem_Cabine[minha_Fila]); //espera a cabine acordar
+				printf("%s está na cabine %d \n",tp,minha_Fila );
+				sem_post(&sem_Veiculos_Fila[minha_Fila]); //avisa que veiculo esta na fila
+				sem_post(&sem_Fila); //deixa a fila
+				usleep(1000*id);
+				sem_wait(&sem_Cabine_check[minha_Fila]); //espera cabine abrir cancela
+				sem_post(&sem_Cabine[minha_Fila]); //deixa cabine
+				printf("%s foi atendido.\n",tp );
+			//} else
+			//printf("veiculo %d n tem lugar na fila)\n",id ); //nao tem lugar
+	
+			}
+	}
+
+	
+
+	int main() {
+			pthread_t thr_veiculos[Tamanho_Fila], thr_cabines[Numero_Cabines],thr_amb[N_Amb],thr_pol[N_Pol];
+			int i, id_vc[Tamanho_Fila], id_cab[Numero_Cabines],tese,x,id_amb[N_Amb],id_pol[N_Pol];
+			srand( (unsigned)time(NULL) );
+	
+			//for (i = 0;i < Tamanho_Fila;i++){
+			//tese = rand() % 6;
+			//printf("valor de i  %d \n",tese);
+			//}
+	
+			//printf("valor de i  %d \n",tese);
+			sem_init(&sem_Fila,0,50); //fila
+			sem_init(&sem_escreve,0,1);
+			sem_init(&sem_ler,0,0);
+	
+			for (i = 0;i < Numero_Cabines;i++){ //inicia semaforo
+				sem_init(&sem_Cabine[i],0,3);
+				sem_init(&sem_Veiculos_Fila[i],0,0);
+				sem_init(&sem_Cabine_check[i],0,0);
+			}
+	
+	
+			for (i=2;i< Tamanho_Fila;i++) { //cria veiculos
+				id_vc[i] = i;
+				//printf("valor de i  %d \n",i);
+				pthread_create(&thr_veiculos[i], NULL, f_veiculo, (void*) &id_vc[i]);
+		
+			}
+
+			for (i=0;i< N_Amb;i++) { //ambulancia
+				id_amb[i] = i;
+				printf("valor de i  %d \n",i);
+				pthread_create(&thr_amb[i], NULL, f_amb, (void*) &id_amb[i]);
+		
+			}
+
+			for (i=1;i< N_Pol;i++) { //ambulancia
+				id_pol[i] = i;
+				printf("valor de i  %d \n",i);
+				pthread_create(&thr_pol[i], NULL, f_pol, (void*) &id_pol[i]);
+		
+			}
+
+			for (i=0;i< Numero_Cabines;i++) { //cria cabines
+				id_cab[i] = i;
+				pthread_create(&thr_cabines[i], NULL, f_cabine, (void*) &id_cab[i]);
+			}
+		//while (1){
+			for (i=0; i <Tamanho_Fila; i++)
+			pthread_join(thr_veiculos[i],NULL);
+	}
